@@ -89,19 +89,19 @@ jobs:
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
         
-        # Fix layout and resource issues
+        # ۱. اصلاحات لایوت و فایل‌های XML
         sed -i 's/@color\/colorAccent/#03A9F4/g' app/src/main/res/layout/activity_main.xml
         sed -i 's/.*summary_pref_local_dns_enabled.*/    <string name="summary_pref_local_dns_enabled">Local DNS<\/string>/' app/src/main/res/values/strings.xml
         
-        # Fix Kotlin code issues
-        # 1. Replace colorAccent with colorPrimary
+        # ۲. جایگزینی رنگ در کلاس‌های جاوا/کاتلین
         sed -i 's/R\.color\.colorAccent/R.color.colorPrimary/g' app/src/main/java/com/v2ray/ang/ui/MainActivity.kt
         
-        # 2. Add proper import and GlobalScope.launch for Coroutines
-        sed -i '1s/^/import kotlinx.coroutines.GlobalScope\n/' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
-        sed -i 's/^\s*launch(/        GlobalScope.launch(/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
+        # ۳. رفع خطاهای فایل LocalRelayProxy.kt (تزریق دقیق Import بعد از کلمه package)
+        sed -i '/^package /a import kotlinx.coroutines.GlobalScope' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
+        sed -i 's/\blaunch[[:space:]]*{/GlobalScope.launch {/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
+        sed -i 's/\blaunch[[:space:]]*(/GlobalScope.launch(/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
         
-        # 3. Fix string "0" to int 0
+        # ۴. رفع خطاهای Type Mismatch
         sed -i 's/else "0"/else 0/g' app/src/main/java/com/v2ray/ang/service/LocalProxyService.kt
         sed -i 's/else "0"/else 0/g' app/src/main/java/com/v2ray/ang/ui/MainActivity.kt
         
