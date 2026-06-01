@@ -89,8 +89,8 @@ jobs:
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
         
-        # اصلاح خطای کاراکترهای غیرمجاز در پکیج زبان برنامه
-        sed -i 's/\\/\\\\/g' app/src/main/res/values/strings.xml
+        # اصلاح نقطه‌زن خط ۲۴۴ بدون آسیب زدن به بقیه کاراکترهای اسکیپ فایل strings
+        sed -i '/summary_pref_local_dns_enabled/d' app/src/main/res/values/strings.xml
         
         ./gradlew assembleDebug
 
