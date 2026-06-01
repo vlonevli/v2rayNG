@@ -89,8 +89,11 @@ jobs:
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
         
-        # اصلاح نقطه‌زن خط ۲۴۴ بدون آسیب زدن به بقیه کاراکترهای اسکیپ فایل strings
-        sed -i '/summary_pref_local_dns_enabled/d' app/src/main/res/values/strings.xml
+        # ۱. حل مشکل رنگ دکمه با جایگزینی کد رنگ مستقیم آبی
+        sed -i 's/@color\/colorAccent/#03A9F4/g' app/src/main/res/layout/activity_main.xml
+        
+        # ۲. اصلاح متن خراب به جای حذف آن برای جلوگیری از خطای Resource Not Found
+        sed -i 's/.*summary_pref_local_dns_enabled.*/    <string name="summary_pref_local_dns_enabled">Local DNS<\/string>/' app/src/main/res/values/strings.xml
         
         ./gradlew assembleDebug
 
