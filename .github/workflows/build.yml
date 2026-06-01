@@ -90,40 +90,4 @@ jobs:
         chmod 755 gradlew
         
         # ۱. اصلاحات لایوت و فایل‌های XML
-        sed -i 's/@color\/colorAccent/#03A9F4/g' app/src/main/res/layout/activity_main.xml
-        sed -i 's/.*summary_pref_local_dns_enabled.*/    <string name="summary_pref_local_dns_enabled">Local DNS<\/string>/' app/src/main/res/values/strings.xml
-        
-        # ۲. جایگزینی رنگ در کلاس‌های جاوا/کاتلین
-        sed -i 's/R\.color\.colorAccent/R.color.colorPrimary/g' app/src/main/java/com/v2ray/ang/ui/MainActivity.kt
-        
-        # ۳. رفع خطاهای فایل LocalRelayProxy.kt (تزریق دقیق Import بعد از کلمه package)
-        sed -i '/^package /a import kotlinx.coroutines.GlobalScope' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
-        sed -i 's/\blaunch[[:space:]]*{/GlobalScope.launch {/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
-        sed -i 's/\blaunch[[:space:]]*(/GlobalScope.launch(/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
-        
-        # ۴. رفع خطاهای Type Mismatch
-        sed -i 's/else "0"/else 0/g' app/src/main/java/com/v2ray/ang/service/LocalProxyService.kt
-        sed -i 's/else "0"/else 0/g' app/src/main/java/com/v2ray/ang/ui/MainActivity.kt
-        
-        ./gradlew assembleDebug
-
-    - name: Upload arm64-v8a APK
-      uses: actions/upload-artifact@v7
-      if: ${{ success() }}
-      with:
-        name: arm64-v8a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/debug/*arm64-v8a*.apk
-
-    - name: Upload armeabi-v7a APK
-      uses: actions/upload-artifact@v7
-      if: ${{ success() }}
-      with:
-        name: armeabi-v7a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/debug/*armeabi-v7a*.apk
-
-    - name: Upload x86 APK
-      uses: actions/upload-artifact@v7
-      if: ${{ success() }}
-      with:
-        name: x86-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/debug/*x86*.apk
+        sed -i 's/@color\/colorAccent/#03A9F4/g' app/src/main/res
