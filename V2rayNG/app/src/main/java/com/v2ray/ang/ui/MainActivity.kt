@@ -20,6 +20,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.tabs.TabLayoutMediator
+import com.v2ray.android.net.LocalRelayProxy
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreServiceManager
@@ -49,6 +50,10 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
     val mainViewModel: MainViewModel by viewModels()
     private lateinit var groupPagerAdapter: GroupPagerAdapter
     private var tabMediator: TabLayoutMediator? = null
+
+    // Local Relay Proxy properties
+    private var relayProxy: LocalRelayProxy? = null
+    private var isProxyRunning = false
 
     private val requestVpnPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == RESULT_OK) {
@@ -96,6 +101,9 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
 
         binding.fab.setOnClickListener { handleFabAction() }
         binding.layoutTest.setOnClickListener { handleLayoutTestClick() }
+        
+        // Setup proxy button control
+        setupProxyButton()
 
         setupGroupTab()
         setupViewModel()
@@ -110,6 +118,10 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
         mainViewModel.updateTestResultAction.observe(this) { setTestState(it) }
         mainViewModel.isRunning.observe(this) { isRunning ->
             applyRunningState(false, isRunning)
+            // Auto-stop proxy when V2Ray stops
+            if (!isRunning && isProxyRunning) {
+                stopLocalProxy()
+            }
         }
         mainViewModel.startListenBroadcast()
         mainViewModel.initAssets(assets)
@@ -199,6 +211,89 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
             binding.fab.contentDescription = getString(R.string.tasker_start_service)
             setTestState(getString(R.string.connection_not_connected))
             binding.layoutTest.isFocusable = false
+        }
+    }
+
+    // ========== LOCAL PROXY METHODS ==========
+
+    private fun setupProxyButton() {
+        binding.btnProxyToggle.setOnClickListener {
+            if (isProxyRunning) {
+                stopLocalProxy()
+            } else {
+                startLocalProxy()
+            }
+        }
+    }
+
+    private fun startLocalProxy() {
+        try {
+            val selectedServerGuid = MmkvManager.getSelectServer()
+            if (selectedServerGuid.isNullOrEmpty()) {
+                toast(R.string.title_file_chooser)
+                return
+            }
+
+            val serverConfig = MmkvManager.decodeServerConfig(selectedServerGuid)
+            if (serverConfig == null) {
+                toastError(R.string.toast_failure)
+                return
+            }
+
+            val targetIP = serverConfig.server ?: "104.19.229.21"
+            val targetPort = serverConfig.serverPort ?: 443
+
+            relayProxy = LocalRelayProxy(
+                listenPort = 40443,
+                targetHost = targetIP,
+                targetPort = targetPort
+            )
+            relayProxy?.start()
+            
+            isProxyRunning = true
+            updateProxyUI(true)
+            toast("Local proxy started on 127.0.0.1:40443 -> $targetIP:$targetPort")
+            LogUtil.i(AppConfig.TAG, "Local proxy started: 127.0.0.1:40443 -> $targetIP:$targetPort")
+            
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to start local proxy", e)
+            toastError("Failed to start proxy: ${e.message}")
+            isProxyRunning = false
+            updateProxyUI(false)
+        }
+    }
+
+    private fun stopLocalProxy() {
+        try {
+            relayProxy?.stop()
+            relayProxy = null
+            isProxyRunning = false
+            updateProxyUI(false)
+            toast(R.string.local_proxy_stopped)
+            LogUtil.i(AppConfig.TAG, "Local proxy stopped")
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to stop local proxy", e)
+            toastError("Failed to stop proxy: ${e.message}")
+        }
+    }
+
+    private fun updateProxyUI(isRunning: Boolean) {
+        if (isRunning) {
+            binding.ivProxyStatus.setImageResource(R.drawable.ic_stop_24dp)
+            binding.ivProxyStatus.setColorFilter(
+                ContextCompat.getColor(this, R.color.color_fab_active),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            )
+            binding.tvProxyState.text = getString(R.string.local_proxy_started)
+            binding.btnProxyToggle.text = getString(R.string.local_proxy_stop)
+        } else {
+            binding.ivProxyStatus.setImageResource(R.drawable.ic_play_24dp)
+            binding.ivProxyStatus.setColorFilter(
+                ContextCompat.getColor(this, R.color.colorAccent),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            )
+            binding.tvProxyState.text = getString(R.string.local_proxy_stopped)
+            binding.btnProxyToggle.text = getString(R.string.local_proxy_start)
         }
     }
 
@@ -656,6 +751,9 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
     }
 
     override fun onDestroy() {
+        if (isProxyRunning) {
+            stopLocalProxy()
+        }
         tabMediator?.detach()
         super.onDestroy()
     }
