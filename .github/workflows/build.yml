@@ -89,11 +89,21 @@ jobs:
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
         
-        # ۱. حل مشکل رنگ دکمه با جایگزینی کد رنگ مستقیم آبی
+        # اصلاحات لایوت و منابع (که با موفقیت کار کرد)
         sed -i 's/@color\/colorAccent/#03A9F4/g' app/src/main/res/layout/activity_main.xml
-        
-        # ۲. اصلاح متن خراب به جای حذف آن برای جلوگیری از خطای Resource Not Found
         sed -i 's/.*summary_pref_local_dns_enabled.*/    <string name="summary_pref_local_dns_enabled">Local DNS<\/string>/' app/src/main/res/values/strings.xml
+        
+        # اصلاحات کدهای کاتلین
+        # 1. جایگزینی colorAccent ناموجود با رنگ پیش‌فرض در کاتلین
+        sed -i 's/R.color.colorAccent/R.color.colorPrimary/g' app/src/main/java/com/v2ray/ang/ui/MainActivity.kt
+        
+        # 2. اضافه کردن Scope برای رفع خطای Coroutine
+        sed -i 's/launch {/kotlinx.coroutines.GlobalScope.launch {/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
+        sed -i 's/launch(/kotlinx.coroutines.GlobalScope.launch(/g' app/src/main/kotlin/com/v2ray/android/net/LocalRelayProxy.kt
+        
+        # 3. رفع ارور تایپ کلاسیک کاتلین (تبدیل "0" متنی به 0 عددی)
+        sed -i 's/else "0"/else 0/g' app/src/main/java/com/v2ray/ang/service/LocalProxyService.kt
+        sed -i 's/else "0"/else 0/g' app/src/main/java/com/v2ray/ang/ui/MainActivity.kt
         
         ./gradlew assembleDebug
 
